@@ -1,0 +1,74 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// sequences.def - Leader Key Sequence Definitions
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Syntax:
+//   SEQ(name, action, key1, key2, ...)
+//
+// Where:
+//   name   - Unique identifier for the sequence
+//   action - SEND_STRING compatible macro (SS_* macros work)
+//   key1+  - Keycodes that trigger the sequence (use aliases from aliases.h)
+//
+// The preprocessor will:
+//   1. Generate compile-time hashes for each sequence
+//   2. Create switch cases in leader_hash_end_user()
+//
+// Example sequences:
+//   SEQ(git_status, "git status\n", G_, S_, T_)
+//   SEQ(win_max, SS_LGUI(SS_TAP(X_UP)), W_, M_)
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ───────────────────────────────────────────────────────────────────────────
+// GIT COMMANDS
+// Leader + G + <key> for git operations
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(git_status,     "git status\n",                         G_, S_)
+SEQ(git_add,        "git add .\n",                          G_, A_)
+SEQ(git_commit,     "git commit -m \"",                     G_, C_)
+SEQ(git_push,       "git push\n",                           G_, P_)
+SEQ(git_pull,       "git pull\n",                           G_, L_)
+SEQ(git_diff,       "git diff\n",                           G_, D_)
+SEQ(git_log,        "git log --oneline -20\n",              G_, O_)
+
+// ───────────────────────────────────────────────────────────────────────────
+// NAVIGATION / BROWSER
+// Leader + N + <key> for navigation
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(nav_back,       SS_LALT(SS_TAP(X_LEFT)),                N_, H_)
+SEQ(nav_fwd,        SS_LALT(SS_TAP(X_RIGHT)),               N_, S_)
+SEQ(nav_refresh,    SS_LCTL("r"),                           N_, R_)
+
+// ───────────────────────────────────────────────────────────────────────────
+// CODE / EDITOR
+// Leader + C + <key> for coding operations
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(code_comment,   SS_LCTL("/"),                           C_, C_)
+SEQ(code_format,    SS_LSFT(SS_LALT("f")),                  C_, F_)
+SEQ(code_rename,    SS_TAP(X_F2),                           C_, R_)
+
+// ───────────────────────────────────────────────────────────────────────────
+// TEXT OPERATIONS
+// Leader + T + <key> for text manipulation
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(text_select_all,    SS_LCTL("a"),                       T_, A_)
+SEQ(text_dup_line,      SS_LCTL(SS_LSFT("d")),              T_, D_)
+
+// ───────────────────────────────────────────────────────────────────────────
+// SYMBOLS / SPECIAL CHARS
+// Leader + S + <key> for special characters
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(sym_arrow_r,    "->",                                   S_, R_)
+SEQ(sym_arrow_l,    "<-",                                   S_, L_)
+SEQ(sym_fat_arrow,  "=>",                                   S_, F_)
+SEQ(sym_not_eq,     "!=",                                   S_, N_)
+SEQ(sym_eq_eq,      "==",                                   S_, E_)
+SEQ(sym_lte,        "<=",                                   S_, H_)
+SEQ(sym_gte,        ">=",                                   S_, S_)
+
+// ───────────────────────────────────────────────────────────────────────────
+// DEBUG / UTILITY
+// Misc sequences
+// ───────────────────────────────────────────────────────────────────────────
+SEQ(util_uuid,      SS_LCTL(SS_LSFT("u")),                  U_, U_)

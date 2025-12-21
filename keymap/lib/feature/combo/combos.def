@@ -1,0 +1,103 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// combos.def - Combo Definitions
+// ═══════════════════════════════════════════════════════════════════════════
+// Syntax:
+//   COMB(name, keycode, key1, key2, ...)     - Output keycode when keys pressed
+//   SUBS(name, string, key1, key2, ...)      - Output string when keys pressed
+//   TOGG(name, layer, key1, key2, ...)       - Toggle layer when keys pressed
+//   COMBO_REF_LAYER(layer, ref_layer)        - Use ref_layer's combos on layer
+//   DEFAULT_REF_LAYER(layer)                 - Default reference layer
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ───────────────────────────────────────────────────────────────────────────
+// REFERENCE LAYERS
+// All layers reference BASE for combo detection
+// ───────────────────────────────────────────────────────────────────────────
+COMBO_REF_LAYER(_NAV, _BASE)
+COMBO_REF_LAYER(_NUM, _BASE)
+COMBO_REF_LAYER(_FUNC, _BASE)
+COMBO_REF_LAYER(_MACRO, _BASE)
+COMBO_REF_LAYER(_MEDIA, _BASE)
+DEFAULT_REF_LAYER(_BASE)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CORE EDITING COMBOS
+// Essential keys accessible via home row combinations
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Backspace, Delete, Tab - Right hand home row
+COMB(CMB_BSPC,      KC_BSPC,        H_, T_)         // Backspace
+COMB(CMB_DEL,       KC_DEL,         T_, N_)         // Delete
+COMB(CMB_TAB,       KC_TAB,         H_, N_)         // Tab
+COMB(CMB_F6,        KC_F6,          H_, N_, T_)     // F6 (accessibility tab focus)
+
+// Enter - Both hands
+COMB(CMB_ENTR_R,    KC_ENT,         M_, W_)         // Enter (right hand)
+COMB(CMB_ENTR_L,    KC_ENT,         K_, J_)         // Enter (left hand)
+
+// Escape
+COMB(CMB_ESC,       KC_ESC,         R_, C_)         // Escape
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SYMBOL COMBOS
+// Punctuation and operators via adjacent key combinations
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Slashes and Pipe
+COMB(CMB_FSLASH,    KC_SLSH,        M_, T_)         // Forward slash /
+COMB(CMB_BSLASH,    KC_BSLS,        GE_, K_)        // Backslash ( \ )
+COMB(CMB_PIPE,      KC_PIPE,        T_, C_)         // Pipe |
+
+// Math operators
+COMB(CMB_MINUS,     KC_MINS,        W_, V_)         // Minus -
+COMB(CMB_EQUAL,     KC_EQL,         M_, V_)         // Equal =
+
+// Grave and Tilde
+COMB(CMB_GRAVE,     KC_GRV,         DT_, CM_)       // Grave `
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLIPBOARD & EDITING HOTKEYS
+// Standard editing operations
+// ═══════════════════════════════════════════════════════════════════════════
+
+COMB(CMB_COPY,      LCTL(KC_C),     CU_, AO_)       // Copy (Ctrl+C)
+COMB(CMB_PASTE,     LCTL(KC_V),     CU_, SH_A)  // Paste (Ctrl+V)
+COMB(CMB_SAVE,      LCTL(KC_S),     N_, SH_S)   // Save (Ctrl+S)
+COMB(CMB_FIND,      LCTL(KC_F),     F_, G_)         // Find (Ctrl+F)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IDE / TERMINAL HOTKEYS
+// Development workflow shortcuts
+// ═══════════════════════════════════════════════════════════════════════════
+
+// VS Code command palette and terminal shortcuts
+COMB(CMB_CTLA_SPC,  LCA(KC_SPC),    NV_SPC, H_)     // Ctrl+Alt+Space (terminal)
+COMB(CMB_CTLS_SPC,  RCS(KC_SPC),    NV_SPC, T_)     // Ctrl+Shift+Space (terminal)
+COMB(CMB_CTLS_P,    RCS(KC_P),      NV_SPC, N_)     // Ctrl+Shift+P (command palette)
+COMB(CMB_CTL_GRV,   LCTL(KC_GRV),   NV_SPC, W_)     // Ctrl+` (toggle terminal)
+
+// Snipping Tool (Windows - opens via Win+R)
+SUBS(CMB_SNIP,      SS_DOWN(X_LGUI) SS_TAP(X_R) SS_UP(X_LGUI) SS_DELAY(300) "snippingTool\n", NV_SPC, M_)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVIGATION LAYER COMBOS
+// Combos that work on the navigation layer
+// ═══════════════════════════════════════════════════════════════════════════
+
+COMB(CMB_WINTAB,    LGUI(KC_TAB),   KC_PGUP, KC_PGDN)  // Win+Tab (on nav layer)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BRACKET COMBOS - NUMBER LAYER
+// Bracket pairs accessible from number layer
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Parentheses () - on 4,5 and 5,6
+COMB(CMB_LPRN,      KC_LPRN,        _4, _5)         // (
+COMB(CMB_RPRN,      KC_RPRN,        _5, _6)         // )
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SYSTEM / BOOTLOADER
+// Hard-to-hit combo for entering bootloader
+// ═══════════════════════════════════════════════════════════════════════════
+
+COMB(CMB_BOOT,      QK_BOOT,        KC_LSFT, NV_SPC, MO(_NUM))  // Bootloader (all 3 thumbs)
