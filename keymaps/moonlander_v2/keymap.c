@@ -45,10 +45,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT_moonlander(
         _F1,  _F2,  _F3,  _F4,  _F5,  _F6,  ___,           ___,  _F7,  _F8,  _F9,  _F10, _F11, _F12,
         ___,  SCL_, CM_,  DT_,  P_,   Y_,   DM_REC2,       DM_REC1, F_,  G_,   C_,   R_,   L_,   ___,
-        ___,  SH_A, AO_,  GE_,  CU_,  I_,   DM_PLY2,       DM_PLY1, D_,  H_,   T_,   N_,   SH_S, ___,
+        ___,  A_, AO_,  GE_,  CU_,  I_,   DM_PLY2,       DM_PLY1, D_,  H_,   T_,   N_,   S_, ___,
         ___,  QT_,  Q_,   J_,   K_,   X_,                          B_,  M_,   W_,   V_,   Z_,   ___,
         ___,  ___,  ___,  ___,  ___,        ___,           ___,          ___,  ___,  ___,  ___,  ___,
-                                TAB,  LS_,  ___,           LEAD_0, NV_SPC, NUMBR
+                                TAB,  LS_,  SH_MON,           SH_MON, NV_SPC, NUMBR
     ),
 
 /*═══════════════════════════════════════════════════════════════════════════╗
