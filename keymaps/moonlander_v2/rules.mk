@@ -83,6 +83,7 @@ endif
 # Feature: RGB breathing
 ifeq ($(strip $(RGB_MATRIX_ENABLE)), yes)
     SRC += lib/feature/rgb/breathing.c
+    SRC += lib/feature/rgb/confetti.c
 endif
 
 # ───────────────────────────────────────────────────────────────────────────

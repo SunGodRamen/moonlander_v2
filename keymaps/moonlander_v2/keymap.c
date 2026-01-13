@@ -24,6 +24,7 @@
 
 #ifdef RGB_MATRIX_ENABLE
 #include "lib/feature/rgb/breathing.h"
+#include "lib/feature/rgb/confetti.h"
 #endif
 
 #include "lib/util/logger.h"
@@ -128,6 +129,7 @@ void keyboard_post_init_user(void) {
 
 #ifdef RGB_MATRIX_ENABLE
     breathing_init();
+    confetti_init();
 #endif
 }
 
@@ -137,6 +139,14 @@ void keyboard_post_init_user(void) {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     LOG_KEY(keycode, record->event.pressed);
+
+#ifdef RGB_MATRIX_ENABLE
+    // Handle confetti trigger
+    if (keycode == X_CONFETTI && record->event.pressed) {
+        confetti_trigger();
+        return false;
+    }
+#endif
 
 #ifdef LEADER_HASH_ENABLE
     if (keycode == LEAD_KEY && record->event.pressed) {
@@ -190,7 +200,12 @@ void leader_hash_end_user(void) {
 
 #ifdef RGB_MATRIX_ENABLE
 bool rgb_matrix_indicators_user(void) {
-    breathing_update();
+    // Confetti takes priority over breathing
+    if (confetti_active()) {
+        confetti_update();
+    } else {
+        breathing_update();
+    }
     return false;
 }
 #endif

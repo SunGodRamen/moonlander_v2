@@ -27,6 +27,11 @@ enum custom_keycodes {
     X_VALU,     // Print current counter value
 
     // ═══════════════════════════════════════════════════════════════
+    // RGB EFFECTS (0x7E20 - 0x7E2F)  <-- ADD THIS SECTION
+    // ═══════════════════════════════════════════════════════════════
+    X_CONFETTI, // Trigger confetti effect
+
+    // ═══════════════════════════════════════════════════════════════
     // BRACKET MODIFIERS (0x7E20 - 0x7E2F)
     // ═══════════════════════════════════════════════════════════════
     BR_MOD,     // Bracket modifier key (A held)
