@@ -61,8 +61,8 @@ COMB(CMB_GRAVE,     KC_GRV,         DT_, CM_)       // Grave `
 // ═══════════════════════════════════════════════════════════════════════════
 
 COMB(CMB_COPY,      LCTL(KC_C),     CU_, AO_)       // Copy (Ctrl+C)
-COMB(CMB_PASTE,     LCTL(KC_V),     CU_, SH_A)  // Paste (Ctrl+V)
-COMB(CMB_SAVE,      LCTL(KC_S),     N_, SH_S)   // Save (Ctrl+S)
+COMB(CMB_PASTE,     LCTL(KC_V),     CU_, A_)  // Paste (Ctrl+V)
+COMB(CMB_SAVE,      LCTL(KC_S),     N_, S_)   // Save (Ctrl+S)
 COMB(CMB_FIND,      LCTL(KC_F),     F_, G_)         // Find (Ctrl+F)
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -101,3 +101,7 @@ COMB(CMB_RPRN,      KC_RPRN,        _5, _6)         // )
 // ═══════════════════════════════════════════════════════════════════════════
 
 COMB(CMB_BOOT,      QK_BOOT,        KC_LSFT, NV_SPC, MO(_NUM))  // Bootloader (all 3 thumbs)
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+COMB(CMB_CONFETTI, X_CONFETTI, SH_MON, NV_SPC, NUMBR)
