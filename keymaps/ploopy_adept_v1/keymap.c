@@ -11,6 +11,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifdef LOCKSTATE_ENABLE
+#include "shared/lockstate/lockstate.h"
+#endif
+
 /* ========================================
  * CUSTOM KEYCODES
  * ======================================== */
@@ -71,6 +75,62 @@ static uint8_t current_dpi_index = DEFAULT_DPI_INDEX;
 static const uint16_t dpi_levels[] = {400, 800, 1600};
 static const uint8_t dpi_levels_count = sizeof(dpi_levels) / sizeof(dpi_levels[0]);
 
+#ifdef LOCKSTATE_ENABLE
+static uint16_t saved_dpi = 800;
+static bool cursor_frozen = false;
+static bool gestures_disabled = false;
+
+static void lockstate_apply_remote(lock_state_t state) {
+    switch (state) {
+        case LOCK_STATE_ML_NAV:
+            // precision mode
+            saved_dpi = dpi_levels[current_dpi_index];
+            pointing_device_set_cpi(400);
+            break;
+
+        case LOCK_STATE_ML_NUM:
+            cursor_frozen = true;
+            break;
+
+        case LOCK_STATE_ML_MACRO:
+            gestures_disabled = true;
+            break;
+
+        case LOCK_STATE_IDLE:
+        default:
+            cursor_frozen = false;
+            gestures_disabled = false;
+            // restore dpi if we overrode it
+            if (pointing_device_get_cpi && saved_dpi) {
+                pointing_device_set_cpi(saved_dpi);
+            } else {
+                pointing_device_set_cpi(dpi_levels[current_dpi_index]);
+            }
+            break;
+    }
+}
+
+static void lockstate_broadcast_ploopy(void) {
+    lock_state_t desired = LOCK_STATE_IDLE;
+
+    if (is_scroll_mode) {
+        desired = LOCK_STATE_PA_SCROLL;
+    } else if (is_zoom_mode) {
+        desired = LOCK_STATE_PA_ZOOM;
+    } else if (IS_LAYER_ON(_MEDIA)) {
+        desired = LOCK_STATE_PA_MEDIA;
+    }
+
+    // only set if we're allowed to own it
+    if (lockstate_is_owned(desired)) {
+        if (desired != lockstate_cached()) lockstate_set(desired);
+    } else if (desired == LOCK_STATE_IDLE && lockstate_is_ploopy(lockstate_cached())) {
+        // clear our previous state
+        lockstate_set(LOCK_STATE_IDLE);
+    }
+}
+#endif
+
 /* ========================================
  * TAP DANCE IMPLEMENTATIONS
  * ======================================== */
@@ -82,6 +142,12 @@ void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
         } else {
             is_scroll_mode = true;
         }
+#ifdef LOCKSTATE_ENABLE
+        if (gestures_disabled && state->count > 1) {
+            tap_code(QK_MOUSE_BUTTON_3);
+            return;
+        }
+#endif
     } else if (state->count == 2) {
         tap_code(KC_HOME);
     }
@@ -95,6 +161,12 @@ void scroll_click_reset(tap_dance_state_t *state, void *user_data) {
 
 void mr_click_finished(tap_dance_state_t *state, void *user_data) {
     (void)user_data;
+#ifdef LOCKSTATE_ENABLE
+    if (gestures_disabled && state->count > 1) {
+        tap_code(QK_MOUSE_BUTTON_2);
+        return;
+    }
+#endif
     if (state->count == 1) {
         tap_code(QK_MOUSE_BUTTON_2);
     } else if (state->count == 2) {
@@ -105,6 +177,13 @@ void mr_click_finished(tap_dance_state_t *state, void *user_data) {
 void media_ctrl_finished(tap_dance_state_t *state, void *user_data) {
     (void)user_data;
     if (state->count == 1) {
+#ifdef LOCKSTATE_ENABLE
+        if (gestures_disabled && state->pressed) {
+            // don't enter MEDIA layer while ML macro recording
+            tap_code(QK_MOUSE_BUTTON_4);
+            return;
+        }
+#endif
         if (!state->pressed) {
             tap_code(QK_MOUSE_BUTTON_4);
         } else {
@@ -126,6 +205,12 @@ void media_ctrl_reset(tap_dance_state_t *state, void *user_data) {
 void nav_overview_finished(tap_dance_state_t *state, void *user_data) {
     (void)user_data;
     if (state->count == 1) {
+#ifdef LOCKSTATE_ENABLE
+        if (gestures_disabled && state->pressed) {
+            // ignore hold-to-nav when disabled
+            return;
+        }
+#endif
         if (state->pressed) {
             is_nav_mode = true;
             layer_on(_NAV);
@@ -133,6 +218,11 @@ void nav_overview_finished(tap_dance_state_t *state, void *user_data) {
             nav_acum_y = 0;
         }
     } else if (state->count == 2) {
+#ifdef LOCKSTATE_ENABLE
+        if (gestures_disabled && state->pressed) {
+            return;
+        }
+#endif
         if (state->pressed) {
             is_overview_mode = true;
             layer_on(_NAV);
@@ -261,6 +351,36 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
  * POINTING DEVICE TASK
  * ======================================== */
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+#ifdef LOCKSTATE_ENABLE
+    lockstate_task();
+
+    // If Moonlander owns current state, apply it
+    lock_state_t s = lockstate_cached();
+    if (lockstate_is_moonlander(s) || s == LOCK_STATE_IDLE) {
+        cursor_frozen = (s == LOCK_STATE_ML_NUM);
+
+        if (s == LOCK_STATE_IDLE) {
+            gestures_disabled = false;
+            pointing_device_set_cpi(dpi_levels[current_dpi_index]);
+        } else if (s == LOCK_STATE_ML_NAV) {
+            pointing_device_set_cpi(400);
+        } else if (s == LOCK_STATE_ML_MACRO) {
+            gestures_disabled = true;
+        }
+    }
+
+    // broadcast our state (secondary device)
+    lockstate_broadcast_ploopy();
+
+    if (cursor_frozen) {
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+        mouse_report.v = 0;
+        mouse_report.h = 0;
+        return mouse_report;
+    }
+#endif
+
     if (abs(nav_acum_x) > ACCUMULATOR_OVERFLOW_LIMIT) nav_acum_x = 0;
     if (abs(nav_acum_y) > ACCUMULATOR_OVERFLOW_LIMIT) nav_acum_y = 0;
     if (abs(media_acum_x) > ACCUMULATOR_OVERFLOW_LIMIT) media_acum_x = 0;
@@ -368,4 +488,33 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 
 void keyboard_post_init_user(void) {
     pointing_device_set_cpi(dpi_levels[DEFAULT_DPI_INDEX]);
+
+#ifdef LOCKSTATE_ENABLE
+    cursor_frozen = false;
+    gestures_disabled = false;
+    saved_dpi = dpi_levels[DEFAULT_DPI_INDEX];
+    lockstate_init(LOCK_ROLE_SECONDARY);
+#endif
 }
+
+#ifdef LOCKSTATE_ENABLE
+void lockstate_on_remote_change(lock_state_t old_state, lock_state_t new_state) {
+    (void)old_state;
+
+    if (lockstate_is_moonlander(new_state) || new_state == LOCK_STATE_IDLE) {
+        // handled in pointing_device_task_user via cached state
+        return;
+    }
+}
+
+void lockstate_on_sync_request(void) {
+    // emergency reset to known-good local state
+    cursor_frozen = false;
+    gestures_disabled = false;
+    is_scroll_mode = false;
+    is_zoom_mode = false;
+    if (IS_LAYER_ON(_MEDIA)) layer_off(_MEDIA);
+    pointing_device_set_cpi(dpi_levels[DEFAULT_DPI_INDEX]);
+}
+#endif
+

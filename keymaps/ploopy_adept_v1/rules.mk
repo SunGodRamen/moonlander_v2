@@ -13,3 +13,5 @@ VIA_ENABLE = no
 PLOOPY_DRAGSCROLL_ENABLE = no
 
 LTO_ENABLE = yes
+
+SRC += shared/lockstate/lockstate.c
