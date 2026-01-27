@@ -34,21 +34,26 @@ void lockstate_set(lock_state_t state) {
         return;
     }
     
+#ifdef LOGGING_ENABLE
     lock_state_t old_state = lockstate.cached_state;
-    
-    led_t led_state = {
-        .num_lock    = (state & 0b001) ? 1 : 0,
-        .caps_lock   = (state & 0b010) ? 1 : 0,
-        .scroll_lock = (state & 0b100) ? 1 : 0
-    };
-    
-    host_keyboard_leds(led_state);
+#endif
+
+    // We cannot directly set host LED state in QMK; instead, toggle host locks
+    // by emitting the lock keycodes until the bitmask matches.
+    lock_state_t current = lockstate_get();
+    uint8_t diff = ((uint8_t)current) ^ ((uint8_t)state);
+
+    if (diff & 0b001) tap_code(KC_NUM_LOCK);
+    if (diff & 0b010) tap_code(KC_CAPS_LOCK);
+    if (diff & 0b100) tap_code(KC_SCROLL_LOCK);
+
     lockstate.cached_state = state;
     lockstate.last_change_time = timer_read();
-    
+
 #ifdef LOGGING_ENABLE
     lockstate_log_change(old_state, state);
 #endif
+
 }
 
 lock_state_t lockstate_get(void) {

@@ -228,7 +228,15 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.y = 0;
         mouse_report.h = 0;
     } else {
-        cursor_apply_acceleration(&mouse_report.x, &mouse_report.y);
+        int16_t ax = mouse_report.x;
+        int16_t ay = mouse_report.y;
+        cursor_apply_acceleration(&ax, &ay);
+        if (ax > 127) ax = 127;
+        if (ax < -127) ax = -127;
+        if (ay > 127) ay = 127;
+        if (ay < -127) ay = -127;
+        mouse_report.x = (mouse_xy_report_t)ax;
+        mouse_report.y = (mouse_xy_report_t)ay;
     }
     
     return mouse_report;
