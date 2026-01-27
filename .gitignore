@@ -1,0 +1,4 @@
+
+# build artifacts
+*.uf2
+.build/

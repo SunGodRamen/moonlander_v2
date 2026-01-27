@@ -32,6 +32,8 @@ WAIT_UF2_POLL_MS="${WAIT_UF2_POLL_MS:-250}"
 UF2_MOUNT_DIR="${UF2_MOUNT_DIR:-}"  # optional fixed mountpoint override
 
 KEYMAP_SRC="$PERSONAL_ROOT/keymaps/$KEYMAP"
+LIB_SRC="$PERSONAL_ROOT/lib"
+[[ -d "$LIB_SRC" ]] || { echo "missing: $LIB_SRC" >&2; exit 1; }
 [[ -d "$KEYMAP_SRC" ]] || { echo "missing: $KEYMAP_SRC" >&2; exit 1; }
 
 # Some keyboards (like ploopyco/madromys/rev1_001) keep keymaps at a parent dir.
@@ -63,12 +65,14 @@ keymap_mount_base_rel() {
 
 qmkc() {
   local rel
+  mkdir -p "$KEYMAP_SRC/lib"
   rel="$(keymap_mount_base_rel)"
 
   docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v "$VENDOR_QMK:/qmk_firmware" \
-    -v "$KEYMAP_SRC:/qmk_firmware/$rel/keymaps/$KEYMAP:ro" \
+    -v "$KEYMAP_SRC:/qmk_firmware/$rel/keymaps/$KEYMAP" \
+    -v "$LIB_SRC:/qmk_firmware/$rel/keymaps/$KEYMAP/lib:ro" \
     -w /qmk_firmware \
     qmkfm/qmk_cli \
     qmk "$@"
@@ -292,146 +296,6 @@ flash_uf2_auto() {
   else
     sudo cp -f "$uf2" "$mp/$(basename "$uf2")"
   fi
-  sync
-  uf2_unmount_best_effort "$mp"
-  echo "[uf2] flashed (copy + sync + unmount best-effort)" >&2
-}
-
-echo "Using KEYBOARD=$KEYBOARD KEYMAP=$KEYMAP"
-echo "VENDOR_QMK=$VENDOR_QMK" >&2
-
-case "${1:-compile}" in
-  compile)
-    qmkc compile -kb "$KEYBOARD" -km "$KEYMAP"
-    if [[ "$KEYBOARD" == ploopyco/madromys* ]]; then
-      out="$(copy_latest_uf2)"
-      echo "[uf2] copied: $out" >&2
-    fi
-    ;;
-
-  flash)
-    qmkc compile -kb "$KEYBOARD" -km "$KEYMAP"
-
-    set +e
-    qmkc flash -kb "$KEYBOARD" -km "$KEYMAP"
-    rc=$?
-    set -e
-
-    if [[ "$rc" == "0" ]]; then
-      exit 0
-    fi
-
-    echo "[flash] qmk flash failed (rc=$rc). Falling back to native dfu-util." >&2
-    flash_dfu_native
-    ;;
-
-  flash-uf2)
-    qmkc compile -kb "$KEYBOARD" -km "$KEYMAP"
-    out="$(copy_latest_uf2)"
-    cat >&2 <<MSG
-[uf2] built: $out
-
-Flash steps (RP2040 UF2):
-- Unplug Adept
-- Hold Bottom-Left button
-- Plug in USB (drive appears, often as RPI-RP2)
-- Drag-and-drop the .uf2 file onto that drive
-MSG
-    ;;
-
-  flash-uf2-auto)
-    qmkc compile -kb "$KEYBOARD" -km "$KEYMAP"
-    flash_uf2_auto
-    ;;
-
-  flash-native)
-    flash_dfu_native
-    ;;
-
-  list-dfu)
-    dfu_list_matching
-    ;;
-
-  clean)
-    qmkc clean
-    ;;
-
-  *)
-    cat >&2 <<USAGE
-Usage:
-  $0 compile
-  $0 flash            # compile + try container flash + fallback native dfu-util
-  $0 flash-native     # native dfu-util only (waits for DFU + flashes)
-  $0 flash-uf2        # compile + copy UF2 + print drag/drop instructions
-  $0 flash-uf2-auto   # compile + wait for BOOTSEL drive + copy UF2 + unmount
-  $0 list-dfu         # show DFU devices matching $DFU_VIDPID
-  $0 clean
-
-Env overrides:
-  VENDOR_QMK=... KEYBOARD=... KEYMAP=...
-  QMK_DFU_SERIAL=2054336B2034
-  DFU_ALT=0 DFU_ADDR=0x08000000 DFU_LEAVE=1
-  WAIT_DFU_SECS=25 WAIT_DFU_POLL_MS=250
-  UF2_LABEL=RPI-RP2 WAIT_UF2_SECS=25 WAIT_UF2_POLL_MS=250 UF2_MOUNT_DIR=/run/media/$USER/RPI-RP2
-USAGE
-    exit 1
-    ;;
-esac
-    echo "$mp"
-    return 0
-  fi
-
-  need sudo
-  local tmp
-  tmp="$(mktemp -d -t "uf2-${UF2_LABEL}.XXXXXX")"
-  sudo mount "$dev" "$tmp"
-  echo "$tmp"
-}
-
-uf2_unmount_best_effort() {
-  local dev mp
-  dev="$(uf2_dev_path 2>/dev/null || true)"
-  mp="${1:-}"
-
-  if [[ -n "${dev:-}" ]] && command -v udisksctl >/dev/null 2>&1; then
-    udisksctl unmount -b "$dev" >/dev/null 2>&1 || true
-    return 0
-  fi
-
-  if [[ -n "${mp:-}" ]]; then
-    sudo umount "$mp" >/dev/null 2>&1 || true
-    case "$mp" in
-      /tmp/uf2-*) rmdir "$mp" >/dev/null 2>&1 || true ;;
-    esac
-  fi
-}
-
-copy_latest_uf2() {
-  local keyboard_filesafe="${KEYBOARD//\//_}"
-  local out_name="ploopy_${keyboard_filesafe}_${KEYMAP}.uf2"
-
-  local uf2
-  uf2="$(find "$VENDOR_QMK" -type f -name "${keyboard_filesafe}_${KEYMAP}.uf2" -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | awk '{print $2}')" || true
-
-  [[ -n "${uf2:-}" && -f "$uf2" ]] || { echo "[uf2] could not locate ${keyboard_filesafe}_${KEYMAP}.uf2 under $VENDOR_QMK" >&2; return 1; }
-
-  cp -f "$uf2" "$PERSONAL_ROOT/$out_name"
-  echo "$PERSONAL_ROOT/$out_name"
-}
-
-flash_uf2_auto() {
-  local uf2 dev mp
-  uf2="$(copy_latest_uf2)"
-  echo "[uf2] local:  $uf2" >&2
-
-  wait_for_uf2
-  dev="$(uf2_dev_path)"
-  echo "[uf2] device: $dev (label=$UF2_LABEL)" >&2
-
-  mp="$(uf2_mount_if_needed)"
-  echo "[uf2] mount:  $mp" >&2
-
-  cp -f "$uf2" "$mp/$(basename "$uf2")"
   sync
   uf2_unmount_best_effort "$mp"
   echo "[uf2] flashed (copy + sync + unmount best-effort)" >&2
